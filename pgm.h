@@ -5,6 +5,11 @@
 #ifndef PATIRATI_PGM_H
 #define PATIRATI_PGM_H
 #include <stdio.h>
+#include <math.h>
+#include <string.h>
+
+#define defaultType "P2"
+#define defaultMaxGrey 255
 
 typedef unsigned short byte;
 
@@ -16,9 +21,21 @@ typedef struct {
   int maxGreyVal;
 } PGM;
 
+typedef struct {
+  int x, y;
+  int xlen, ylen; //
+  double slope;
+  double angle; //arctan slope
+  double length;
+  int thickness;
+} line;
+
+line newLine(int x, int y, int xlen, int ylen, int thickness);
 PGM  readImage(const char* imageName);
 void cropImage(PGM *image);
 void freeImage(PGM *image);
 void printImage(PGM image, char* name);
 void printImageCrop(PGM image, char* name);
+void drawLine(PGM image, line l);
+PGM newImage(int w, int h);
 #endif //PATIRATI_PGM_H

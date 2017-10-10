@@ -5,6 +5,16 @@
 #include <stdlib.h>
 #include "pgm.h"
 
+//private function...
+byte** allocImgData(int w, int h){
+  byte **data    = (byte**)malloc(sizeof(byte*) * h);
+  data[0] =  (byte*)malloc(sizeof(byte) * h * w);
+  for (int i = 1; i < h; i++){
+    data[i] = data[i-1] + w;
+  }
+  return data;
+}
+
 PGM readImage(const char* imageName){
   FILE *f = fopen(imageName, "r");
   PGM img;
@@ -12,11 +22,8 @@ PGM readImage(const char* imageName){
   //init values
   img.x0 = 0; img.y0 = 0; img.yn=img.h; img.xn = img.w;
   //images are ~400k we can still have'em in an simple arr
-  img.data    = (byte**)malloc(sizeof(byte*) * img.h);
-  img.data[0] =  (byte*)malloc(sizeof(byte) * img.h * img.w);
-  for (int i = 1; i < img.h; i++){
-    img.data[i] = img.data[i-1] + img.w;
-  }
+  img.data = allocImgData(img.w, img.h);
+
   for (int i = 0; i < img.h; ++i) {
     for (int j = 0; j < img.w; ++j) {
       byte b;
@@ -71,4 +78,76 @@ void freeImage(PGM *image){
   image->y0 = 0;
   image->xn = 0;
   image->yn = 0;
+}
+
+//void fillSquare(PGM image, int x1, int y1, int x2, int y2){
+//  for (int i = x1; i >=x2 ; --i) {
+//    int j = y1;
+//    while (){}
+//  }
+//}
+
+void drawLine(PGM image, line l){
+  if(fabs(l.slope) > 1){
+    int imax = l.ylen < 0 ? 0 : l.ylen;
+    double xstart = l.x;
+    double ystart = l.y;
+    double ystart2 = - (l.thickness - 1) * 1/l.slope;
+    double xstart2 = - (l.thickness - 1) * l.slope;
+    int i = l.ylen < 0 ? l.ylen : 0;
+    int ypos = 0, xpos = 0;
+    for (; i < imax; ++i) {
+      ypos = (int)ystart + i;
+      xpos = (int)xstart + (int)(i/l.slope);
+      image.data[ypos][xpos] = (byte)defaultMaxGrey;
+      for (int j = 1; j < xstart2 - 1 ; ++j) {
+//        image.data[ypos + (j)][(int)xstart + j] = (byte)defaultMaxGrey/2;
+        image.data[ypos + (int)(j * (-0.99/l.slope))][xpos + j] = (byte)defaultMaxGrey/2;
+      }
+      ypos = (int)(ystart +ystart2 + i);
+      xpos = (int)(xstart + xstart2 + (int)(i/l.slope));
+      image.data[ypos][xpos] = (byte)defaultMaxGrey;
+    }
+    if(l.thickness > 1){
+      line l2 = newLine(l.x, l.y, (int)xstart2, (int)ystart2, 1);
+      drawLine(image, l2);
+      l2 = newLine((int)xstart + (int)(i/l.slope) + 1, (int)ystart + i,(int)xstart2, (int)ystart2, 1);
+      drawLine(image, l2);
+    }
+  }
+  if(fabs(l.slope) < 1){
+    int i = l.xlen < 0 ? l.xlen : 0;
+    int imax = l.xlen < 0 ? 0 : l.xlen;
+    for (; i < imax; ++i) {
+      int xpos = l.x + i;
+      int ypos = l.y + (int)(i*l.slope);
+      for (int j = 0; j < l.thickness; ++j) {
+        image.data[ypos+j][xpos] = (byte)defaultMaxGrey;
+      }
+    }
+  }
+}
+
+PGM newImage(int w, int h){
+  PGM img;
+  img.w = w; img.h = h;
+  img.x0 = 0; img.y0 = 0; img.yn=img.h; img.xn = img.w;
+  img.maxGreyVal = defaultMaxGrey;
+  strncpy(img.fileType, defaultType, 3);
+  img.data = allocImgData(img.w, img.h);
+  for (int i = 0; i < img.h; ++i) {
+    for (int j = 0; j < img.w; ++j) {
+      img.data[i][j] = 0;
+    }
+  }
+  return img;
+}
+line newLine(int x, int y, int xlen, int ylen, int thickness){
+  line l;
+  l.x = x; l.y = y; l.xlen = xlen; l.ylen = ylen;
+  l.slope = (double)ylen/(double)xlen;
+  l.length = sqrt(xlen*xlen + ylen*ylen);
+  l.angle = atan(l.slope);
+  l.thickness = thickness;
+  return l;
 }

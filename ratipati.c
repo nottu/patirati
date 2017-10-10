@@ -4,7 +4,8 @@
 
 #include "ratipati.h"
 
-void findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
+//return slope
+double findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
   *xl = x, *yl = y;
   int maxYdif = 30, ydif = 0;
   for (int i = x - 1; i >= 0; --i) { //look left
@@ -20,8 +21,10 @@ void findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
       }
     }
   }
+  return (double)(y - *yl)/(double)(x - *xl);
 }
-void findRightPoint(PGM image, int x, int y, int* xr, int* yr){
+//return slope
+double findRightPoint(PGM image, int x, int y, int* xr, int* yr){
   *xr = x, *yr = y;
   int maxYdif = 30, ydif = 0;
   for (int i = x; i < image.xn; ++i) { //look right
@@ -37,6 +40,7 @@ void findRightPoint(PGM image, int x, int y, int* xr, int* yr){
       }
     }
   }
+  return (double)(y - *yr)/(double)(x - *xr);
 }
 void findFirstWhite(PGM image, int *x, int *y){
   *x = 0, *y = 0; //coords for first white
@@ -58,9 +62,16 @@ byte getFirstJointInfo(PatiRati *rati, PGM image){
     return 1;
   }
   int xl, yl;
-  findLeftPoint(image, x, y, &xl, &yl);
+  double sl = findLeftPoint(image, x, y, &xl, &yl);
   int xr, yr;
-  findRightPoint(image, x, y, &xr, &yr);
+  double sr = findRightPoint(image, x, y, &xr, &yr);
+
+//  line l1 = newLine(x, y, xr-x, yr-y, 1);
+  line l2 = newLine(x, y, xl-x, yl-y, 8);
+  PGM img2 = newImage(image.w, image.h);
+//  drawLine(img2, l1);
+  drawLine(img2, l2);
+  printImage(img2, "test.pgm");
 
   return 0;
 }
