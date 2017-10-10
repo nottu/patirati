@@ -99,14 +99,14 @@ void drawLine(PGM image, line l){
     for (; i < imax; ++i) {
       ypos = (int)ystart + i;
       xpos = (int)xstart + (int)(i/l.slope);
-      image.data[ypos][xpos] = (byte)defaultMaxGrey;
+      image.data[ypos][xpos] = (byte)defaultMaxGrey/2;
       for (int j = 1; j < xstart2 - 1 ; ++j) {
-//        image.data[ypos + (j)][(int)xstart + j] = (byte)defaultMaxGrey/2;
-        image.data[ypos + (int)(j * (-0.99/l.slope))][xpos + j] = (byte)defaultMaxGrey/2;
+        image.data[ypos + (j)][xpos + j] = (byte)defaultMaxGrey/2;
+        image.data[ypos + (int)(j * (-1/l.slope))][xpos + j] = (byte)defaultMaxGrey/2;
       }
       ypos = (int)(ystart +ystart2 + i);
       xpos = (int)(xstart + xstart2 + (int)(i/l.slope));
-      image.data[ypos][xpos] = (byte)defaultMaxGrey;
+      image.data[ypos][xpos] = (byte)defaultMaxGrey/2;
     }
     if(l.thickness > 1){
       line l2 = newLine(l.x, l.y, (int)xstart2, (int)ystart2, 1);
@@ -122,7 +122,7 @@ void drawLine(PGM image, line l){
       int xpos = l.x + i;
       int ypos = l.y + (int)(i*l.slope);
       for (int j = 0; j < l.thickness; ++j) {
-        image.data[ypos+j][xpos] = (byte)defaultMaxGrey;
+        image.data[ypos+j][xpos] = (byte)defaultMaxGrey/2;
       }
     }
   }
