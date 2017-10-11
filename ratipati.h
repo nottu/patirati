@@ -14,7 +14,18 @@ typedef struct {
   double slopes[8]; //same info, easier to use
 } PatiRati;
 
+typedef struct {
+  int vxMin, vxMax;
+  int vyMin, vyMax;
+  int vxEMin, vxEMax;
+  int vyEMin, vyEMax;
+} lineFreedom;
+
 //returns suggestions for first joint (x, y, len, angle, slope)
-byte getFirstJointInfo(PatiRati *rati, PGM image);
+line getFirstJointInfo(PatiRati *rati, PGM image);
+void genLinesWithVariance(line orig, lineFreedom freedom,  line* lines,  int nLines);
+void rati();
+void findFirstLine(PGM image, PGM aprox, line sug);
+lineFreedom newLineFreedom(int x, int y, int xE, int yE);
 
 #endif //PATIRATI_RATIPATI_H

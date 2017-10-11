@@ -38,4 +38,6 @@ void printImage(PGM image, char* name);
 void printImageCrop(PGM image, char* name);
 void drawLine(PGM image, line l);
 PGM newImage(int w, int h);
+void getLineLens(double slope, double l, int *xl, int *yl);
+double compareImg(PGM image, PGM aprox);
 #endif //PATIRATI_PGM_H

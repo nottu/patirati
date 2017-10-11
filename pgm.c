@@ -87,37 +87,33 @@ void freeImage(PGM *image){
 //  }
 //}
 
+void getLineLens(double slope, double l, int *xl, int *yl){
+  double sl2 = slope * slope;
+  double l2 = l * l;
+  *xl = (int)sqrt(l2 / (1 + sl2));
+  *yl = (int)sqrt(l2 / (1 + 1/sl2));
+}
+
 void drawLine(PGM image, line l){
-  if(fabs(l.slope) > 1){
-    int imax = l.ylen < 0 ? 0 : l.ylen;
-    int xstart = l.x;
-    int ystart = l.y;
-    double xstart2 = - (l.thickness - 1) * l.slope;
-    int ypos = 0, xpos = 0, i = 0;
-    for (int j = 0; j < xstart2 - 1 ; ++j) {
-      i = l.ylen < 0 ? l.ylen : 0;
-      double invSlope = 1/l.slope;
-      int imax1 = imax - (int)(j * pow(invSlope, 2));
-      for (; i < imax1; ++i) {
-        ypos = ystart + i + j;
-        xpos = xstart + (int) (i / l.slope);
-        image.data[ypos][xpos] = (byte) defaultMaxGrey / 2;
+  int dir = l.slope > 0 ? 1 : -1;
+  if (fabs(l.slope) > 1){
+    //thick recorrer en x
+    for (int j = 0; j < l.thickness; ++j) {
+      //recorrer en y
+      for (int i = 0; i < l.ylen; ++i) {
+        int ypos = l.y + i;
+        int xpos = l.x + (int)(i/l.slope) + j;
+        image.data[ypos][xpos] = defaultMaxGrey/2;
       }
     }
-  }
-  if(fabs(l.slope) < 1){
-    int imax = l.xlen < 0 ? 0 : l.xlen;
-    int xstart = l.x;
-    int ystart = l.y;
-    double xstart2 = - (l.thickness - 1) * l.slope;
-    for (int j = 0; j < xstart2 - 1 ; ++j) {
-      int i = l.xlen < 0 ? l.xlen : 0;
-      double invSlope = 1/l.slope;
-      int imax1 = imax - (int)(j * pow(invSlope, 2));
-      for (; i < imax1; ++i) {
-        int xpos = xstart + i + j;
-        int ypos = ystart + (int)(i*l.slope);
-        image.data[ypos][xpos] = (byte)defaultMaxGrey;
+  } else {
+    //thick recorrer en y
+    for (int j = 0; j < l.thickness; ++j) {
+      //recorrer en y
+      for (int i = 0; i < l.xlen; ++i) {
+        int xpos = l.x + dir *i;
+        int ypos = l.y + (int)(dir *i * l.slope) + j;
+        image.data[ypos][xpos] = defaultMaxGrey/2;
       }
     }
   }
@@ -139,10 +135,22 @@ PGM newImage(int w, int h){
 }
 line newLine(int x, int y, int xlen, int ylen, int thickness){
   line l;
-  l.x = x; l.y = y; l.xlen = xlen; l.ylen = ylen;
-  l.slope = (double)ylen/(double)xlen;
+  l.x = x; l.y = y; l.xlen = abs(xlen); l.ylen = abs(ylen);
+  l.slope = xlen ? (double)ylen/(double)xlen : 1000; //should use dbl max
   l.length = sqrt(xlen*xlen + ylen*ylen);
   l.angle = atan(l.slope);
   l.thickness = thickness;
   return l;
+}
+double compareImg(PGM image, PGM aprox){
+  int TP = 0, FP = 0, P = 0;
+  for (int i = image.y0; i <image.yn; ++i) {
+    for (int j = image.x0; j < image.xn; ++j) {
+      if(image.data[i][j]){
+        P++;
+        if(aprox.data[i][j]) TP++;
+      } else if(aprox.data[i][j]) FP++;
+    }
+  }
+  return (double)TP/(double)(P + FP); //penalize false positives
 }
