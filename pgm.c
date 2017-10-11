@@ -90,30 +90,34 @@ void freeImage(PGM *image){
 void drawLine(PGM image, line l){
   if(fabs(l.slope) > 1){
     int imax = l.ylen < 0 ? 0 : l.ylen;
-    double xstart = l.x;
-    double ystart = l.y;
-    double ystart2 = - (l.thickness - 1) * 1/l.slope;
+    int xstart = l.x;
+    int ystart = l.y;
     double xstart2 = - (l.thickness - 1) * l.slope;
     int ypos = 0, xpos = 0, i = 0;
     for (int j = 0; j < xstart2 - 1 ; ++j) {
       i = l.ylen < 0 ? l.ylen : 0;
-      double invSlope = -1/l.slope;
+      double invSlope = 1/l.slope;
       int imax1 = imax - (int)(j * pow(invSlope, 2));
       for (; i < imax1; ++i) {
-        ypos = (int) ystart + i + j;
-        xpos = (int) xstart + (int) (i / l.slope);
+        ypos = ystart + i + j;
+        xpos = xstart + (int) (i / l.slope);
         image.data[ypos][xpos] = (byte) defaultMaxGrey / 2;
       }
     }
   }
   if(fabs(l.slope) < 1){
-    int i = l.xlen < 0 ? l.xlen : 0;
     int imax = l.xlen < 0 ? 0 : l.xlen;
-    for (; i < imax; ++i) {
-      int xpos = l.x + i;
-      int ypos = l.y + (int)(i*l.slope);
-      for (int j = 0; j < l.thickness; ++j) {
-        image.data[ypos+j][xpos] = (byte)defaultMaxGrey;
+    int xstart = l.x;
+    int ystart = l.y;
+    double xstart2 = - (l.thickness - 1) * l.slope;
+    for (int j = 0; j < xstart2 - 1 ; ++j) {
+      int i = l.xlen < 0 ? l.xlen : 0;
+      double invSlope = 1/l.slope;
+      int imax1 = imax - (int)(j * pow(invSlope, 2));
+      for (; i < imax1; ++i) {
+        int xpos = xstart + i + j;
+        int ypos = ystart + (int)(i*l.slope);
+        image.data[ypos][xpos] = (byte)defaultMaxGrey;
       }
     }
   }
