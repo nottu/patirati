@@ -2,8 +2,8 @@
 // Created by Javier Peralta on 10/9/17.
 //
 
-#include <stdlib.h>
 #include "ratipati.h"
+#include "pgm.h"
 
 //return slope
 double findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
@@ -22,8 +22,12 @@ double findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
       }
     }
   }
+  if(y == *yl) {
+
+  }
   return (double)(y - *yl)/(double)(x - *xl);
 }
+
 //return slope
 double findRightPoint(PGM image, int x, int y, int* xr, int* yr){
   *xr = x, *yr = y;
@@ -56,7 +60,7 @@ void findFirstWhite(PGM image, int *x, int *y){
   }
 }
 
-line getFirstJointInfo(PatiRati *rati, PGM image){
+line getFirstJointInfo(PGM image){
   int x, y; //coords for first white
   findFirstWhite(image, &x, &y);
   if( !x ){
@@ -65,8 +69,49 @@ line getFirstJointInfo(PatiRati *rati, PGM image){
   }
   int xl, yl;
   findLeftPoint(image, x, y, &xl, &yl);
+  int xr, yr;
+  findRightPoint(image, x, y, &xr, &yr);
+  //center line start a bit
+  x = (xr+x)/2;
+  y = (yr + y)/2;
   line l2 = newLine(x, y, xl-x, yl-y, 1);
   return l2;
+}
+
+line* fastBadApproach(PGM image){
+  line* badLines = (line*)malloc(sizeof(line) * 4);
+  badLines[0] = getFirstJointInfo(image);
+  PGM img2 = newImage(image.w, image.h);
+  int nx = 0, ny = 0, endx, endy;
+  for (int i = 1; i < 4; ++i) {
+    int slopeDir = badLines[i - 1].slope > 0 ? 1 : -1;
+    endx = badLines[i - 1].x + slopeDir*badLines[i - 1].xlen;
+    endy = badLines[i - 1].y + badLines[i - 1].ylen; //always down
+    nx = endx; ny = endy;
+    //recorre ny hasta encontrar dif a 0
+    while (image.data[++ny][nx]);
+    ny--;
+    while (image.data[ny][nx -= slopeDir]);
+    nx += slopeDir;
+    int xl, yl;
+    slopeDir < 0 ? findRightPoint(image, nx, ny, &xl, &yl)
+                 : findLeftPoint(image, nx, ny, &xl, &yl);
+
+    endx -= (endx - nx)/2;
+    endy -= (endy - ny)/2;
+    nx = endx; ny = endy;
+    //center line end a bit
+    setLengths(&badLines[i - 1], endx - badLines[i - 1].x, endy - badLines[i - 1].y);
+    //center line start a bit
+    line l = newLine(nx, ny, xl-nx, yl-ny, 1);
+    badLines[i] = l;
+  }
+  for (int j = 0; j < 4; ++j) {
+    drawLine(img2, badLines[j]);
+  }
+  printImage(img2, "test.pgm");
+  freeImage(&img2);
+  return badLines;
 }
 
 void findFirstLine(PGM image, PGM aprox, line sug){
@@ -85,9 +130,46 @@ lineFreedom newLineFreedom(int x, int y, int xE, int yE){
   freedom.vyMin = -y; freedom.vyMax = y;
   freedom.vxEMin = -xE; freedom.vxEMax = xE;
   freedom.vyEMin = -yE; freedom.vyEMax = yE;
+  freedom.thMin = 1; freedom.thMax = 15;
   return freedom;
 }
 void genLinesWithVariance(line orig, lineFreedom freedom,  line* lines,  int nLines){
-
+  for (int i = 0; i < nLines; ++i) {
+    int startX = freedom.vxMin + rand()%(freedom.vxMax - freedom.vxMin);
+    startX += orig.x;
+    int startY = freedom.vyMin + rand()%(freedom.vyMax - freedom.vyMin);
+    startY += orig.y;
+    int endX = freedom.vxEMin + rand()%(freedom.vxEMax - freedom.vxEMin);
+    endX += orig.xlen;
+    endX *= orig.slope > 0 ? 1 : -1;
+    int endY = freedom.vyEMin + rand()%(freedom.vyEMax - freedom.vyEMin);
+    endY += orig.ylen;
+    int th = freedom.thMin + rand()%(freedom.thMax - freedom.thMin);
+    line nl = newLine(startX, startY, endX, endY, th);
+    lines[i] = nl;
+  }
 }
-void rati(){}
+line bestLine(PGM image, line l, int ngen){
+  //use less arbitrary values
+  #warning use less arbitrary values
+  lineFreedom freedom = newLineFreedom(10, 10, 10, 10);
+  line *lines = (line*)malloc(sizeof(line) * ngen);
+  genLinesWithVariance(l, freedom, lines, ngen);
+}
+void rati(const char *imgName){
+#warning use time(NULL) as seed
+  srand(0);
+  PGM img = readImage(imgName);
+  if(img.data == NULL){
+    printf("ERROR al leer %s", imgName);
+    return;
+  }
+  int ngen = 20;
+  cropImage(&img);
+  line *lines = fastBadApproach(img);
+  for (int i = 0; i < 1; ++i) { // i < 4
+    bestLine(img, lines[i], ngen);
+  }
+  free(lines);
+  freeImage(&img);
+}

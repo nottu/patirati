@@ -5,6 +5,7 @@
 #ifndef PATIRATI_RATIPATI_H
 #define PATIRATI_RATIPATI_H
 
+#include <stdlib.h>
 #include "pgm.h"
 
 typedef struct {
@@ -19,13 +20,15 @@ typedef struct {
   int vyMin, vyMax;
   int vxEMin, vxEMax;
   int vyEMin, vyEMax;
+  int thMin, thMax;
 } lineFreedom;
 
 //returns suggestions for first joint (x, y, len, angle, slope)
-line getFirstJointInfo(PatiRati *rati, PGM image);
+line getFirstJointInfo(PGM image);
 void genLinesWithVariance(line orig, lineFreedom freedom,  line* lines,  int nLines);
-void rati();
+void rati(const char *imgName);
 void findFirstLine(PGM image, PGM aprox, line sug);
 lineFreedom newLineFreedom(int x, int y, int xE, int yE);
+line* fastBadApproach(PGM image);
 
 #endif //PATIRATI_RATIPATI_H

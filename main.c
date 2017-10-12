@@ -1,11 +1,6 @@
 #include "ratipati.h"
 
 int main(int argc, const char** argv) {
-  PGM img = readImage(argv[1]);
-  cropImage(&img);
-//  printImageCrop(img, "crop.pgm");
-  PatiRati p;
-  getFirstJointInfo(&p, img);
-  freeImage(&img);
+  if(argc > 1) rati(argv[1]);
   return 0;
 }

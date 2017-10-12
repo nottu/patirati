@@ -31,6 +31,7 @@ typedef struct {
 } line;
 
 line newLine(int x, int y, int xlen, int ylen, int thickness);
+void setLengths(line *l, int xlen, int ylen);
 PGM  readImage(const char* imageName);
 void cropImage(PGM *image);
 void freeImage(PGM *image);
