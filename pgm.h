@@ -33,12 +33,13 @@ typedef struct {
   double length;
   int thickness;
 } line;
-
+byte** allocImgData(int w, int h);
 line newLine(int x, int y, int xlen, int ylen, int thickness);
 void setLengths(line *l, int xlen, int ylen);
 PGM  readImage(const char* imageName);
 void cropImage(PGM *image);
 void freeImage(PGM *image);
+void freeImageData(byte** imgData);
 void printImage(PGM image, const char* name);
 void printImageCrop(PGM image, const char* name);
 void drawLine(PGM image, line l);

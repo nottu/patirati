@@ -21,7 +21,7 @@ PGM readImage(const char* imageName){
     img.data = NULL;
     return img;
   }
-  fscanf(f, "%s %d %d %d", img.fileType, &(img.w), &(img.h), &(img.maxGreyVal));
+  fscanf(f, "%s %d %d %hd", img.fileType, &(img.w), &(img.h), &(img.maxGreyVal));
   //init values
   img.x0 = 0; img.y0 = 0; img.yn=img.h; img.xn = img.w;
   //images are ~400k we can still have'em in an simple arr
@@ -73,8 +73,7 @@ void printImageCrop(PGM image, const char* name){
   fclose(f);
 }
 void freeImage(PGM *image){
-  free(image->data[0]);
-  free(image->data);
+  freeImageData(image->data);
   image->w = 0;
   image->h = 0;
   image->maxGreyVal = 0;
@@ -83,7 +82,10 @@ void freeImage(PGM *image){
   image->xn = 0;
   image->yn = 0;
 }
-
+void freeImageData(byte** imgData){
+  free(imgData[0]);
+  free(imgData);
+}
 //void fillSquare(PGM image, int x1, int y1, int x2, int y2){
 //  for (int i = x1; i >=x2 ; --i) {
 //    int j = y1;
