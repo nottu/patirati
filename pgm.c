@@ -2,7 +2,6 @@
 // Created by Javier Peralta on 10/7/17.
 //
 
-#include <stdlib.h>
 #include "pgm.h"
 
 //private function...
@@ -43,16 +42,17 @@ void cropImage(PGM *image){
   for (int i = 0; i < image->h; ++i) {
     for (int j = 0; j < image->w; ++j) {
       byte d = image->data[i][j];
-      if(d != 0){
-        image->x0 = j < image->x0 ? j : image->x0;
-        image->y0 = i < image->y0 ? i : image->y0;
+      if (d != 0) {
+        image->x0 = j < image->x0 ? j-1 : image->x0;
+        image->y0 = i < image->y0 ? i-1 : image->y0;
         image->xn = j > image->xn ? j : image->xn;
         image->yn = i > image->yn ? i : image->yn;
       }
     }
   }
+  image->xn+=2; image->yn+=2; //add some padding
 }
-void printImage(PGM image, char* name){
+void printImage(PGM image, const char* name){
   FILE *f = fopen(name, "w");
   fprintf(f, "%s\n%d %d\n%d\n", image.fileType, image.w, image.h, image.maxGreyVal);
   for (int i = 0; i < image.h; ++i) {
@@ -62,7 +62,7 @@ void printImage(PGM image, char* name){
   }
   fclose(f);
 }
-void printImageCrop(PGM image, char* name){
+void printImageCrop(PGM image, const char* name){
   FILE *f = fopen(name, "w");
   fprintf(f, "%s\n%d %d\n%d\n", image.fileType, image.xn - image.x0, image.yn - image.y0, image.maxGreyVal);
   for (int i = image.y0; i <image.yn; ++i) {
@@ -129,6 +129,20 @@ PGM newImage(int w, int h){
   img.x0 = 0; img.y0 = 0; img.yn=img.h; img.xn = img.w;
   img.maxGreyVal = defaultMaxGrey;
   strncpy(img.fileType, defaultType, 3);
+  img.data = allocImgData(img.w, img.h);
+  for (int i = 0; i < img.h; ++i) {
+    for (int j = 0; j < img.w; ++j) {
+      img.data[i][j] = 0;
+    }
+  }
+  return img;
+}
+PGM newImageFromImg(PGM imgO){
+  PGM img = newImage(imgO.w, imgO.h);
+  img.w = imgO.w; img.h = imgO.h;
+  img.x0 = imgO.x0; img.y0 = imgO.y0; img.yn=imgO.yn; img.xn = imgO.xn;
+  img.maxGreyVal = imgO.maxGreyVal;
+  strncpy(img.fileType, imgO.fileType, 3);
   img.data = allocImgData(img.w, img.h);
   for (int i = 0; i < img.h; ++i) {
     for (int j = 0; j < img.w; ++j) {

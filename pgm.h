@@ -7,18 +7,22 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define defaultType "P2"
 #define defaultMaxGrey 255
 
+#ifndef BYTE_TYPE
+#define BYTE_TYPE
 typedef unsigned short byte;
+#endif
 
 typedef struct {
   char fileType[3];//2 chars of file type
   byte **data;
   int w, h; //columns (w), rows(h)
   int x0, y0, xn, yn; //start and end of image, (x, y) coordinates
-  int maxGreyVal;
+  byte maxGreyVal;
 } PGM;
 
 typedef struct {
@@ -35,10 +39,11 @@ void setLengths(line *l, int xlen, int ylen);
 PGM  readImage(const char* imageName);
 void cropImage(PGM *image);
 void freeImage(PGM *image);
-void printImage(PGM image, char* name);
-void printImageCrop(PGM image, char* name);
+void printImage(PGM image, const char* name);
+void printImageCrop(PGM image, const char* name);
 void drawLine(PGM image, line l);
 PGM newImage(int w, int h);
+PGM newImageFromImg(PGM img);
 void getLineLens(double slope, double l, int *xl, int *yl);
 double compareImg(PGM image, PGM aprox);
 #endif //PATIRATI_PGM_H

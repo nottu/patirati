@@ -1,0 +1,154 @@
+//
+// Created by jperalta on 10/13/17.
+//
+
+#include "skeletization.h"
+#include "pgm.h"
+
+typedef struct pntNode{
+  ipoint point;
+  struct pntNode *next;
+  byte val;
+} pointList;
+typedef byte (*shouldKeepFunc)(PGM, ipoint, byte, byte);
+
+ipoint newPoint(int x, int y){
+  ipoint p;
+  p.x = x; p.y = y;
+  return p;
+}
+
+pointList* newNode(ipoint point){
+  pointList *p = (pointList*)malloc(sizeof(pointList));
+  p->point = point; p->next = NULL;
+  return p;
+}
+pointList* newNodeC(int x, int y){
+  return newNode(newPoint(x, y));
+}
+void freePointList(pointList *list){
+  pointList *tmp = list;
+  while(list != NULL){
+    free(tmp);
+    list = list->next;
+    tmp = list;
+  }
+}
+
+// Calculates number of transitions (white to black) and neighbours, returns white nodes
+pointList* countTransitionsAndNeighbours(PGM img, ipoint point, byte *white, byte *transitions){
+  pointList *head = newNode(point);
+  pointList *tail = head;
+  byte n = 8; //should take into account border pixels
+  int indexes[8] = {0,1,1,1,0,-1,-1,-1};
+  byte lastPix = 1;
+  *white = 0; *transitions = 0;
+  for (byte i = 0; i < n; ++i) {
+    int yidx = point.y + indexes[(i + 6) % 8];
+    int xidx = point.x + indexes[i];
+    if(img.data[yidx][xidx]){
+      if(img.data[yidx][xidx]-- == img.maxGreyVal){
+        tail->next = newNodeC(xidx, yidx);
+        tail = tail->next;
+      }
+      byte val = img.data[yidx][xidx]--;
+      *white += 1;
+      if(!lastPix) {
+        *transitions+=1;
+        lastPix = 1;
+      }
+    } else lastPix = 0;
+  }
+  *transitions += (!lastPix && img.data[point.y - 1][point.x]);
+  tail = head;
+  head = head->next;
+  free(tail); tail = NULL;
+  return head;
+}
+void findFirstWhite_sk(PGM image, int *x, int *y){
+  *x = 0, *y = 0; //coords for first white
+  for (int i = image.y0; i < image.yn; ++i) { //should loop only once
+    for (int j = image.x0; j < image.xn; ++j) {
+      if(image.data[i][j]) {
+        *x = j; *y = i;
+        i = image.yn; //break of outer loop
+        break;
+      }
+    }
+  }
+}
+
+byte shouldKeepFirstPass(PGM img, ipoint p, byte white, byte transitions){
+  byte b = 0;
+  b += white >= 2 && white <= 6;
+  b += transitions == 1;
+  b += img.data[p.y - 1][p.x] || img.data[p.y][p.x + 1] || img.data[p.y + 1][p.x];
+  b += img.data[p.y][p.x - 1] || img.data[p.y][p.x + 1] || img.data[p.y + 1][p.x];
+  return (byte)!(b == 4);
+}
+byte shouldKeepSecondPass(PGM img, ipoint p, byte white, byte transitions){
+  byte b = 0;
+
+  b += white >= 2 && white <= 6;
+  b += transitions == 1;
+  b += img.data[p.y - 1][p.x] || img.data[p.y][p.x + 1] || img.data[p.y][p.x - 1] ;
+  b += img.data[p.y - 1][p.x] || img.data[p.y + 1][p.x] || img.data[p.y + 1][p.x];
+  return (byte)!(b == 4);
+}
+
+int filterPass(PGM *img, shouldKeepFunc func){
+  PGM img2 = newImageFromImg(*img);
+  int x = 0, y = 0;
+  findFirstWhite_sk(*img, &x, &y);
+  pointList *head = newNodeC(x, y);
+  pointList *tail = head; // easier insert at end
+  byte white = 0, transitions = 0;
+  pointList *counter = head;
+  do {
+    pointList *newPoints = countTransitionsAndNeighbours(*img, counter->point, &white, &transitions);
+    tail->next = newPoints;
+    while(newPoints && tail->next) tail = tail->next;
+    counter->val = func(*img, counter->point, white, transitions);
+    img->data[counter->point.y][counter->point.x] /= 2;
+    counter = counter->next;
+  } while(white && counter);
+  tail = head;
+  int px = 0;
+  while (tail->next){
+    if(tail->val){
+      px++;
+      img2.data[tail->point.y][tail->point.x] = img2.maxGreyVal;
+    }
+    pointList *tmp = tail;
+    tail = tail->next;
+    free(tmp);
+  }
+  byte **tmp = img->data;
+  img->data = img2.data;
+  img2.data = tmp;
+  freeImage(&img2);
+  return px;
+}
+
+void skeletize(PGM *image){
+  int chng = 0;
+  int iter = 0;
+//  do {
+//    iter++;
+//    chng = 0;
+//    chng += filterPass(image, shouldKeepFirstPass);
+//    chng += filterPass(image, shouldKeepSecondPass);
+//  }while(chng);
+  chng += filterPass(image, shouldKeepFirstPass);
+  chng += filterPass(image, shouldKeepSecondPass);
+  chng += filterPass(image, shouldKeepFirstPass);
+  chng += filterPass(image, shouldKeepSecondPass);
+  chng += filterPass(image, shouldKeepFirstPass);
+//  chng += filterPass(image, shouldKeepSecondPass);
+//  chng += filterPass(image, shouldKeepFirstPass);
+//  chng += filterPass(image, shouldKeepSecondPass);
+//  chng += filterPass(image, shouldKeepFirstPass);
+//  chng += filterPass(image, shouldKeepSecondPass);
+//  chng += filterPass(image, shouldKeepFirstPass);
+//  chng += filterPass(image, shouldKeepSecondPass);
+}

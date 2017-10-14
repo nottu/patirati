@@ -22,7 +22,9 @@ double findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
       }
     }
   }
-  if(y == *yl) {
+  if(y == *yl) { //look downards
+    *xl -= 1;
+    while(image.data[*yl += 1][*xl] == 0);
 
   }
   return (double)(y - *yl)/(double)(x - *xl);
@@ -81,7 +83,6 @@ line getFirstJointInfo(PGM image){
 line* fastBadApproach(PGM image){
   line* badLines = (line*)malloc(sizeof(line) * 4);
   badLines[0] = getFirstJointInfo(image);
-  PGM img2 = newImage(image.w, image.h);
   int nx = 0, ny = 0, endx, endy;
   for (int i = 1; i < 4; ++i) {
     int slopeDir = badLines[i - 1].slope > 0 ? 1 : -1;
@@ -106,11 +107,6 @@ line* fastBadApproach(PGM image){
     line l = newLine(nx, ny, xl-nx, yl-ny, 1);
     badLines[i] = l;
   }
-  for (int j = 0; j < 4; ++j) {
-    drawLine(img2, badLines[j]);
-  }
-  printImage(img2, "test.pgm");
-  freeImage(&img2);
   return badLines;
 }
 
@@ -156,7 +152,7 @@ line bestLine(PGM image, line l, int ngen){
   line *lines = (line*)malloc(sizeof(line) * ngen);
   genLinesWithVariance(l, freedom, lines, ngen);
 }
-void rati(const char *imgName){
+void rati(const char *imgName, const char* outName){
 #warning use time(NULL) as seed
   srand(0);
   PGM img = readImage(imgName);
@@ -164,12 +160,20 @@ void rati(const char *imgName){
     printf("ERROR al leer %s", imgName);
     return;
   }
-  int ngen = 20;
+//  int ngen = 20;
   cropImage(&img);
-  line *lines = fastBadApproach(img);
-  for (int i = 0; i < 1; ++i) { // i < 4
-    bestLine(img, lines[i], ngen);
-  }
-  free(lines);
+//  line *lines = fastBadApproach(img);
+////  for (int i = 0; i < 1; ++i) { // i < 4
+////    bestLine(img, lines[i], ngen);
+////  }
+//  PGM img2 = newImage(img.w, img.h);
+//  for (int j = 0; j < 4; ++j) {
+//    drawLine(img2, lines[j]);
+//  }
+//  printImage(img2, outName);
+//  freeImage(&img2);
+//  free(lines);
+  printImageCrop(img, outName);
   freeImage(&img);
 }
+
