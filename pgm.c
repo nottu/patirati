@@ -86,45 +86,6 @@ void freeImageData(byte** imgData){
   free(imgData[0]);
   free(imgData);
 }
-//void fillSquare(PGM image, int x1, int y1, int x2, int y2){
-//  for (int i = x1; i >=x2 ; --i) {
-//    int j = y1;
-//    while (){}
-//  }
-//}
-
-void getLineLens(double slope, double l, int *xl, int *yl){
-  double sl2 = slope * slope;
-  double l2 = l * l;
-  *xl = (int)sqrt(l2 / (1 + sl2));
-  *yl = (int)sqrt(l2 / (1 + 1/sl2));
-}
-
-void drawLine(PGM image, line l){
-  int dir = l.slope > 0 ? 1 : -1;
-  if (fabs(l.slope) > 1){
-    //thick recorrer en x
-    for (int j = 0; j < l.thickness; ++j) {
-      //recorrer en y
-      for (int i = 0; i < l.ylen; ++i) {
-        int ypos = l.y + i;
-        int xpos = l.x + (int)(i/l.slope) + j;
-        image.data[ypos][xpos] = defaultMaxGrey/2;
-      }
-    }
-  } else {
-    //thick recorrer en y
-    for (int j = 0; j < l.thickness; ++j) {
-      //recorrer en y
-      for (int i = 0; i < l.xlen; ++i) {
-        int xpos = l.x + dir *i;
-        int ypos = l.y + (int)(dir *i * l.slope) + j;
-        image.data[ypos][xpos] = defaultMaxGrey/2;
-      }
-    }
-  }
-}
-
 PGM newImage(int w, int h){
   PGM img;
   img.w = w; img.h = h;
@@ -139,36 +100,42 @@ PGM newImage(int w, int h){
   }
   return img;
 }
-PGM newImageFromImg(PGM imgO){
-  PGM img = newImage(imgO.w, imgO.h);
+PGM cloneImage(PGM imgO){
+  PGM img;
   img.w = imgO.w; img.h = imgO.h;
   img.x0 = imgO.x0; img.y0 = imgO.y0; img.yn=imgO.yn; img.xn = imgO.xn;
   img.maxGreyVal = imgO.maxGreyVal;
   strncpy(img.fileType, imgO.fileType, 3);
   img.data = allocImgData(img.w, img.h);
-  for (int i = 0; i < img.h; ++i) {
-    for (int j = 0; j < img.w; ++j) {
-      img.data[i][j] = 0;
-    }
-  }
+  memcpy(img.data[0], imgO.data[0], sizeof(byte) * img.w * img.h);
   return img;
 }
-line newLine(int x, int y, int xlen, int ylen, int thickness){
-  line l;
-  l.x = x; l.y = y;
-  l.xlen = abs(xlen); l.ylen = abs(ylen);
-  l.slope = xlen ? (double)ylen/(double)xlen : 1000; //should use dbl max
-  l.length = sqrt(xlen*xlen + ylen*ylen);
-  l.angle = atan(l.slope);
-  l.thickness = thickness;
-  return l;
+
+//last and first points
+void findFirstWhite(PGM image, int *x, int *y){
+  *x = 0, *y = 0; //coords for first white
+  for (int i = image.y0; i < image.yn; ++i) { //should loop only once
+    for (int j = image.x0; j < image.xn; ++j) {
+      if(image.data[i][j]) {
+        *x = j; *y = i;
+        return;
+      }
+    }
+  }
 }
-void setLengths(line *l, int xlen, int ylen){
-  l->xlen = abs(xlen); l->ylen = abs(ylen);
-  l->slope = xlen ? (double)ylen/(double)xlen : 1000; //should use dbl max
-  l->angle = atan(l->slope);
-  l->length = sqrt(xlen*xlen + ylen*ylen);
+void findLastWhite(PGM image, int *x, int *y){
+  *x = 0, *y = 0; //coords for first white
+  for (int i = image.yn; i > image.y0; --i) { //should loop only once
+    for (int j = image.xn; j > image.x0; --j) {
+      if(image.data[i][j]) {
+        *x = j; *y = i;
+        return;
+      }
+    }
+  }
 }
+//
+
 double compareImg(PGM image, PGM aprox){
   int TP = 0, FP = 0, P = 0;
   for (int i = image.y0; i <image.yn; ++i) {

@@ -4,13 +4,6 @@
 
 #include "skeletization.h"
 
-typedef struct pntNode{
-  ipoint point;
-  struct pntNode *next;
-  byte val;
-} pointList;
-typedef byte (*shouldKeepFunc)(PGM, ipoint, byte, byte);
-
 ipoint newPoint(int x, int y){
   ipoint p;
   p.x = x; p.y = y;
@@ -54,18 +47,6 @@ pointList* countTransitionsAndNeighbours(PGM img, ipoint point, byte *white, byt
   free(tail);
   return head;
 }
-void findFirstWhite_sk(PGM image, int *x, int *y){
-  *x = 0, *y = 0; //coords for first white
-  for (int i = image.y0; i < image.yn; ++i) { //should loop only once
-    for (int j = image.x0; j < image.xn; ++j) {
-      if(image.data[i][j]) {
-        *x = j; *y = i;
-        i = image.yn; //break of outer loop
-        break;
-      }
-    }
-  }
-}
 
 byte shouldKeepFirstPass(PGM img, ipoint p, byte white, byte transitions){
   byte b = 0;
@@ -86,7 +67,7 @@ byte shouldKeepSecondPass(PGM img, ipoint p, byte white, byte transitions){
 
 int filterPass(PGM *img, shouldKeepFunc func){
   int x = 0, y = 0;
-  findFirstWhite_sk(*img, &x, &y);
+  findFirstWhite(*img, &x, &y);
   pointList *head = newNodeC(x, y);
   pointList *tail = head; // easier insert at end
   byte white = 0, transitions = 0;
@@ -126,6 +107,5 @@ void skeletize(PGM *image){
     chng = 0;
     chng += filterPass(image, shouldKeepFirstPass);
     chng += filterPass(image, shouldKeepSecondPass);
-  } while(chng);
-
+  } while(chng && iter < SKELETIZATION_MAX_ITER);
 }

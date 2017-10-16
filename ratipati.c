@@ -3,177 +3,128 @@
 //
 
 #include "ratipati.h"
-#include "pgm.h"
 
-//return slope
-double findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
+//line stuff
+line newLine(int x, int y, int xlen, int ylen, int thickness){
+  line l;
+  l.x = x; l.y = y;
+  l.xlen = abs(xlen); l.ylen = abs(ylen);
+  l.slope = xlen ? (double)ylen/(double)xlen : 1000; //should use dbl max
+  l.length = sqrt(xlen*xlen + ylen*ylen);
+  l.angle = atan(l.slope);
+  l.thickness = thickness;
+  return l;
+}
+line newLineFromPoints(ipoint p1, ipoint p2){
+  return newLine(p1.x ,p1.y, p2.x - p1.x, p2.y - p1.y, 1);
+}
+void setLengths(line *l, int xlen, int ylen){
+  l->xlen = abs(xlen); l->ylen = abs(ylen);
+  l->slope = xlen ? (double)ylen/(double)xlen : 1000; //should use dbl max
+  l->angle = atan(l->slope);
+  l->length = sqrt(xlen*xlen + ylen*ylen);
+}
+void drawLine(PGM image, line l){
+  int dir = l.slope > 0 ? 1 : -1;
+  if (fabs(l.slope) > 1){
+    //thick recorrer en x
+    for (int j = 0; j < l.thickness; ++j) {
+      //recorrer en y
+      for (int i = 0; i < l.ylen + j *dir/(2*l.slope); ++i) {
+        int ypos = l.y + i;
+        int xpos = l.x - l.thickness/2 + (int)(i/l.slope) + j;
+        image.data[ypos][xpos] = defaultMaxGrey/2;
+      }
+    }
+  } else {
+    //thick recorrer en y
+    for (int j = 0; j < l.thickness; ++j) {
+      //recorrer en y
+      for (int i = 0; i < l.xlen - j*l.slope/2; ++i) {
+        int xpos = l.x + dir *i;
+        int ypos = l.y - l.thickness/2 + (int)(dir *i * l.slope) + j;
+        image.data[ypos][xpos] = defaultMaxGrey/2;
+      }
+    }
+  }
+}
+//
+
+int findPointInRow(PGM *img, int y){
+  for (int j = img->x0; j < img->xn; ++j) {
+    if (img->data[y][j]) return j;
+  }
+  return 0;
+}
+
+ipoint __newPoint(int x, int y){
+  ipoint p;
+  p.x = x; p.y = y;
+  return p;
+}
+void findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
   *xl = x, *yl = y;
-  int maxYdif = 30, ydif = 0;
+  int maxYdif = 30, ydif = 0, xdif = 0;
   for (int i = x - 1; i >= 0; --i) { //look left
-    ydif = 0;
+    ydif = 0; xdif++;
     for (int j = *yl; j < image.yn; ++j) {
       if(image.data[j][i]) {
+        if(j - *yl > xdif) return;
         *xl = i; *yl = j;
+        xdif = 0;
         break;
       }
       if(++ydif >= maxYdif){
-        i = -1; //break of outer loop
-        break;
-      }
-    }
-  }
-  if(y == *yl) { //look downards
-    *xl -= 1;
-    while(image.data[*yl += 1][*xl] == 0);
-
-  }
-  return (double)(y - *yl)/(double)(x - *xl);
-}
-
-//return slope
-double findRightPoint(PGM image, int x, int y, int* xr, int* yr){
-  *xr = x, *yr = y;
-  int maxYdif = 30, ydif = 0;
-  for (int i = x; i < image.xn; ++i) { //look right
-    ydif = 0;
-    for (int j = *yr; j < image.yn; ++j) {
-      if(image.data[j][i]) {
-        *xr = i; *yr = j;
-        break;
-      }
-      if(++ydif >= maxYdif){
-        i = image.xn; //break of outer loop
-        break;
-      }
-    }
-  }
-  return (double)(y - *yr)/(double)(x - *xr);
-}
-void findFirstWhite(PGM image, int *x, int *y){
-  *x = 0, *y = 0; //coords for first white
-  for (int i = image.y0; i < image.yn; ++i) { //should loop only once
-    for (int j = image.x0; j < image.xn; ++j) {
-      if(image.data[i][j]) {
-        *x = j; *y = i;
-        i = image.yn; //break of outer loop
-        break;
+        return;
       }
     }
   }
 }
-
-line getFirstJointInfo(PGM image){
-  int x, y; //coords for first white
-  findFirstWhite(image, &x, &y);
-  if( !x ){
-    printf("ERROR");
-    exit(1);
+//inflection points plus start and end
+ipoint* findInflectionPoints(PGM img, int nPoints){
+  ipoint *points = (ipoint*)malloc(sizeof(ipoint) * nPoints);
+  int x, y;
+  findFirstWhite(img, &x, &y);
+  points[0] = __newPoint(x, y);
+  char lastSlope = 0;
+  int x1 = findPointInRow(&img, img.y0), x2;
+  int found = 1;
+  for (int i = y + 8; i < img.yn; i++) {
+    x2 = findPointInRow(&img, i);
+    if(x2 != 0 && x1 != 0){
+      if(x1 > x2){
+        if(lastSlope == -1){//inflection point
+          points[found++] = __newPoint(x1, i);
+        }
+        lastSlope = 1;
+      } else if(x1 < x2){
+        if(lastSlope == 1){//inflection point
+          points[found++] = __newPoint(x1, i);
+        }
+        lastSlope = -1;
+      }
+      if(abs(x1 - x2) > 25) {
+        int xl, yl;
+        findLeftPoint(img, x2, i, &xl, &yl);
+        x2 = xl;
+        i = yl;
+        points[found++] = __newPoint(x2, i);
+      }
+    }
+    x1 = x2;
   }
-  int xl, yl;
-  findLeftPoint(image, x, y, &xl, &yl);
-  int xr, yr;
-  findRightPoint(image, x, y, &xr, &yr);
-  //center line start a bit
-  x = (xr+x)/2;
-  y = (yr + y)/2;
-  line l2 = newLine(x, y, xl-x, yl-y, 1);
-  return l2;
+  findLastWhite(img, &x, &y);
+  points[nPoints - 1] = __newPoint(x, y); //found should equal nPoints-1
+  return points;
 }
 
-line* fastBadApproach(PGM image){
-  line* badLines = (line*)malloc(sizeof(line) * 4);
-  badLines[0] = getFirstJointInfo(image);
-  int nx = 0, ny = 0, endx, endy;
-  for (int i = 1; i < 4; ++i) {
-    int slopeDir = badLines[i - 1].slope > 0 ? 1 : -1;
-    endx = badLines[i - 1].x + slopeDir*badLines[i - 1].xlen;
-    endy = badLines[i - 1].y + badLines[i - 1].ylen; //always down
-    nx = endx; ny = endy;
-    //recorre ny hasta encontrar dif a 0
-    while (image.data[++ny][nx]);
-    ny--;
-    while (image.data[ny][nx -= slopeDir]);
-    nx += slopeDir;
-    int xl, yl;
-    slopeDir < 0 ? findRightPoint(image, nx, ny, &xl, &yl)
-                 : findLeftPoint(image, nx, ny, &xl, &yl);
-
-    endx -= (endx - nx)/2;
-    endy -= (endy - ny)/2;
-    nx = endx; ny = endy;
-    //center line end a bit
-    setLengths(&badLines[i - 1], endx - badLines[i - 1].x, endy - badLines[i - 1].y);
-    //center line start a bit
-    line l = newLine(nx, ny, xl-nx, yl-ny, 1);
-    badLines[i] = l;
+line* rati(PGM img){
+  int npoints = 5;
+  ipoint* points = findInflectionPoints(img, npoints);
+  line* lines = (line*)malloc(sizeof(line) * npoints);
+  for (int i = 0; i < 4; ++i) {
+    lines[i] = newLineFromPoints(points[i], points[i+1]);
+    drawLine(img, lines[i]);
   }
-  return badLines;
+  return lines;
 }
-
-void findFirstLine(PGM image, PGM aprox, line sug){
-//  +- 10 en X y Y, slope +- 0.2
-  int sizeGen = 10;
-  lineFreedom freedom = newLineFreedom(10, 10, 10, 10);
-  line *lines = (line*)malloc(sizeof(line) * sizeGen);
-  genLinesWithVariance(sug, freedom, lines, sizeGen);
-//  PGM img2 = newImage(image.w, image.h);
-//  drawLine(img2, sug);
-//  printImage(img2, "test.pgm");
-}
-lineFreedom newLineFreedom(int x, int y, int xE, int yE){
-  lineFreedom freedom;
-  freedom.vxMin = -x; freedom.vxMax = x;
-  freedom.vyMin = -y; freedom.vyMax = y;
-  freedom.vxEMin = -xE; freedom.vxEMax = xE;
-  freedom.vyEMin = -yE; freedom.vyEMax = yE;
-  freedom.thMin = 1; freedom.thMax = 15;
-  return freedom;
-}
-void genLinesWithVariance(line orig, lineFreedom freedom,  line* lines,  int nLines){
-  for (int i = 0; i < nLines; ++i) {
-    int startX = freedom.vxMin + rand()%(freedom.vxMax - freedom.vxMin);
-    startX += orig.x;
-    int startY = freedom.vyMin + rand()%(freedom.vyMax - freedom.vyMin);
-    startY += orig.y;
-    int endX = freedom.vxEMin + rand()%(freedom.vxEMax - freedom.vxEMin);
-    endX += orig.xlen;
-    endX *= orig.slope > 0 ? 1 : -1;
-    int endY = freedom.vyEMin + rand()%(freedom.vyEMax - freedom.vyEMin);
-    endY += orig.ylen;
-    int th = freedom.thMin + rand()%(freedom.thMax - freedom.thMin);
-    line nl = newLine(startX, startY, endX, endY, th);
-    lines[i] = nl;
-  }
-}
-line bestLine(PGM image, line l, int ngen){
-  //use less arbitrary values
-  #warning use less arbitrary values
-  lineFreedom freedom = newLineFreedom(10, 10, 10, 10);
-  line *lines = (line*)malloc(sizeof(line) * ngen);
-  genLinesWithVariance(l, freedom, lines, ngen);
-}
-void rati(const char *imgName, const char* outName){
-#warning use time(NULL) as seed
-  srand(0);
-  PGM img = readImage(imgName);
-  if(img.data == NULL){
-    printf("ERROR al leer %s", imgName);
-    return;
-  }
-//  int ngen = 20;
-  cropImage(&img);
-//  line *lines = fastBadApproach(img);
-////  for (int i = 0; i < 1; ++i) { // i < 4
-////    bestLine(img, lines[i], ngen);
-////  }
-//  PGM img2 = newImage(img.w, img.h);
-//  for (int j = 0; j < 4; ++j) {
-//    drawLine(img2, lines[j]);
-//  }
-//  printImage(img2, outName);
-//  freeImage(&img2);
-//  free(lines);
-  printImageCrop(img, outName);
-  freeImage(&img);
-}
-

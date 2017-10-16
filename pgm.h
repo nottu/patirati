@@ -25,26 +25,19 @@ typedef struct {
   byte maxGreyVal;
 } PGM;
 
-typedef struct {
-  int x, y;
-  int xlen, ylen; //
-  double slope;
-  double angle; //arctan slope
-  double length;
-  int thickness;
-} line;
 byte** allocImgData(int w, int h);
-line newLine(int x, int y, int xlen, int ylen, int thickness);
-void setLengths(line *l, int xlen, int ylen);
 PGM  readImage(const char* imageName);
 void cropImage(PGM *image);
 void freeImage(PGM *image);
 void freeImageData(byte** imgData);
 void printImage(PGM image, const char* name);
 void printImageCrop(PGM image, const char* name);
-void drawLine(PGM image, line l);
+
 PGM newImage(int w, int h);
-PGM newImageFromImg(PGM img);
-void getLineLens(double slope, double l, int *xl, int *yl);
+PGM cloneImage(PGM img);
 double compareImg(PGM image, PGM aprox);
+
+//helper functions, not proper for pgm.h..
+void findFirstWhite(PGM image, int *x, int *y);
+void findLastWhite(PGM image, int *x, int *y);
 #endif //PATIRATI_PGM_H

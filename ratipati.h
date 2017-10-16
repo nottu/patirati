@@ -7,27 +7,31 @@
 
 #include "pgm.h"
 
+#ifndef IPOINT
+#define IPOINT
 typedef struct {
-  int x, y; //start point
-  int lens[8]; //min and max len
-  double angles[8]; //min and max angle
-  double slopes[8]; //same info, easier to use
-} PatiRati;
+  int x, y;
+} ipoint; //integer point
+#endif
 
 typedef struct {
-  int vxMin, vxMax;
-  int vyMin, vyMax;
-  int vxEMin, vxEMax;
-  int vyEMin, vyEMax;
-  int thMin, thMax;
-} lineFreedom;
+  int x, y;
+  int xlen, ylen; //
+  double slope;
+  double angle; //arctan slope
+  double length;
+  int thickness;
+} line;
 
-//returns suggestions for first joint (x, y, len, angle, slope)
-line getFirstJointInfo(PGM image);
-void genLinesWithVariance(line orig, lineFreedom freedom,  line* lines,  int nLines);
-void rati(const char *imgName, const char* outName);
-void findFirstLine(PGM image, PGM aprox, line sug);
-lineFreedom newLineFreedom(int x, int y, int xE, int yE);
-line* fastBadApproach(PGM image);
+line newLine(int x, int y, int xlen, int ylen, int thickness);
+line newLineFromPoints(ipoint p1, ipoint p2);
+void setLengths(line *l, int xlen, int ylen);
+void drawLine(PGM image, line l);
+
+int findPointInRow(PGM *img, int y);
+ipoint __newPoint(int x, int y);//same as in skeletization.h
+ipoint* findInflectionPoints(PGM img, int nPoints);
+
+line* rati(PGM img);
 
 #endif //PATIRATI_RATIPATI_H
