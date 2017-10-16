@@ -4,12 +4,6 @@
 
 #include "skeletization.h"
 
-ipoint newPoint(int x, int y){
-  ipoint p;
-  p.x = x; p.y = y;
-  return p;
-}
-
 pointList* newNode(ipoint point){
   pointList *p = (pointList*)malloc(sizeof(pointList));
   p->point = point; p->next = NULL;

@@ -7,13 +7,7 @@
 #define PATIRATI_SKELETIZATION_H
 
 #include "pgm.h"
-
-#ifndef IPOINT
-#define IPOINT
-typedef struct {
-  int x, y;
-} ipoint; //integer point
-#endif
+#include "linepoint.h"
 
 #define SKELETIZATION_MAX_ITER 100
 typedef struct pntNode{
@@ -23,7 +17,6 @@ typedef struct pntNode{
 } pointList;
 typedef byte (*shouldKeepFunc)(PGM, ipoint, byte, byte);
 //node point stuff
-ipoint newPoint(int x, int y);
 pointList* newNode(ipoint point);
 pointList* newNodeC(int x, int y);
 //skeletize helper functions

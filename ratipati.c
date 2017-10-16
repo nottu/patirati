@@ -57,11 +57,6 @@ int findPointInRow(PGM *img, int y){
   return 0;
 }
 
-ipoint __newPoint(int x, int y){
-  ipoint p;
-  p.x = x; p.y = y;
-  return p;
-}
 void findLeftPoint(PGM image, int x, int y, int* xl, int* yl){
   *xl = x, *yl = y;
   int maxYdif = 30, ydif = 0, xdif = 0;
@@ -85,7 +80,7 @@ ipoint* findInflectionPoints(PGM img, int nPoints){
   ipoint *points = (ipoint*)malloc(sizeof(ipoint) * nPoints);
   int x, y;
   findFirstWhite(img, &x, &y);
-  points[0] = __newPoint(x, y);
+  points[0] = newPoint(x, y);
   char lastSlope = 0;
   int x1 = findPointInRow(&img, img.y0), x2;
   int found = 1;
@@ -94,12 +89,12 @@ ipoint* findInflectionPoints(PGM img, int nPoints){
     if(x2 != 0 && x1 != 0){
       if(x1 > x2){
         if(lastSlope == -1){//inflection point
-          points[found++] = __newPoint(x1, i);
+          points[found++] = newPoint(x1, i);
         }
         lastSlope = 1;
       } else if(x1 < x2){
         if(lastSlope == 1){//inflection point
-          points[found++] = __newPoint(x1, i);
+          points[found++] = newPoint(x1, i);
         }
         lastSlope = -1;
       }
@@ -108,13 +103,13 @@ ipoint* findInflectionPoints(PGM img, int nPoints){
         findLeftPoint(img, x2, i, &xl, &yl);
         x2 = xl;
         i = yl;
-        points[found++] = __newPoint(x2, i);
+        points[found++] = newPoint(x2, i);
       }
     }
     x1 = x2;
   }
   findLastWhite(img, &x, &y);
-  points[nPoints - 1] = __newPoint(x, y); //found should equal nPoints-1
+  points[nPoints - 1] = newPoint(x, y); //found should equal nPoints-1
   return points;
 }
 
