@@ -5,6 +5,11 @@
 #ifndef PATIRATI_LINEPOINT_H
 #define PATIRATI_LINEPOINT_H
 
+#ifndef BYTE_TYPE
+#define BYTE_TYPE
+typedef unsigned short byte;
+#endif
+
 typedef struct {
   int x, y;
 } ipoint; //integer point
@@ -15,7 +20,7 @@ typedef struct {
   double slope;
   double angle; //arctan slope
   double length;
-  int thickness;
+  byte thickness;
 } line;
 
 ipoint newPoint(int x, int y);

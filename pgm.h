@@ -32,9 +32,11 @@ void freeImage(PGM *image);
 void freeImageData(byte** imgData);
 void printImage(PGM image, const char* name);
 void printImageCrop(PGM image, const char* name);
+void cleanImageData(PGM image);
 
 PGM newImage(int w, int h);
 PGM cloneImage(PGM img);
+PGM cleanImageClone(PGM imgO);
 double compareImg(PGM image, PGM aprox);
 
 //helper functions, not proper for pgm.h..

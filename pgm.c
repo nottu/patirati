@@ -7,7 +7,7 @@
 //private function...
 byte** allocImgData(int w, int h){
   byte **data    = (byte**)malloc(sizeof(byte*) * h);
-  data[0] =  (byte*)malloc(sizeof(byte) * h * w);
+  data[0] =  (byte*)calloc(sizeof(byte), (size_t )h * w);
   for (int i = 1; i < h; i++){
     data[i] = data[i-1] + w;
   }
@@ -72,6 +72,15 @@ void printImageCrop(PGM image, const char* name){
   }
   fclose(f);
 }
+//set all iamge to 0s
+void cleanImageData(PGM image){
+  //only need zeros in uncropped area
+  for (int i = image.y0; i <image.yn; ++i) {
+    for (int j = image.x0; j < image.xn; ++j) {
+     image.data[i][j] = 0;
+    }
+  }
+}
 void freeImage(PGM *image){
   freeImageData(image->data);
   image->w = 0;
@@ -101,16 +110,20 @@ PGM newImage(int w, int h){
   return img;
 }
 PGM cloneImage(PGM imgO){
+  PGM img = cleanImageClone(imgO);
+  memcpy(img.data[0], imgO.data[0], sizeof(byte) * img.w * img.h);
+  return img;
+}
+
+PGM cleanImageClone(PGM imgO){
   PGM img;
   img.w = imgO.w; img.h = imgO.h;
   img.x0 = imgO.x0; img.y0 = imgO.y0; img.yn=imgO.yn; img.xn = imgO.xn;
   img.maxGreyVal = imgO.maxGreyVal;
   strncpy(img.fileType, imgO.fileType, 3);
   img.data = allocImgData(img.w, img.h);
-  memcpy(img.data[0], imgO.data[0], sizeof(byte) * img.w * img.h);
   return img;
 }
-
 //last and first points
 void findFirstWhite(PGM image, int *x, int *y){
   *x = 0, *y = 0; //coords for first white
