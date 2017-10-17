@@ -33,7 +33,7 @@ int cmpGradeFunc(const void *a, const void *b);
 double gradePoints(PGM *img, ipoint *p, byte thVar, byte thickness, int n);
 ipoint genPointWithVariance(ipoint p, int dx, int dy);
 void genPointPopulation(ipoint *p, pointFreedom *var, int n, int size, ipoint** pop);
-void testAndSortPointPop(PGM *img, ipoint** pop, byte* thicknesses, pointFreedom *var, int n, int size);
+double testAndSortPointPop(PGM *img, ipoint** pop, byte* thicknesses, pointFreedom *var, int n, int size);
 void updatePointAndVariance(ipoint *p, pointFreedom *var, ipoint **pop, int n, int size);
 line* findBestLines(PGM *img, ipoint* points, byte n);
 

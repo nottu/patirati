@@ -10,7 +10,9 @@ int main(int argc, const char** argv) {
     PGM imgO = cloneImage(img);
     skeletize(&img);
     line* lines = rati(img, imgO);
+    printf("-------- %s --------\n", argv[1]);
     for (int i = 0; i < 4; ++i) {
+      printf("Linea %d, Angulo %lf, Longitud %lf\n", i, lines[i].angle, lines[i].length);
       lines[i].thickness = 15;
       drawLine(imgO, lines[i]);
     }

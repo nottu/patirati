@@ -159,5 +159,5 @@ double compareImg(PGM image, PGM aprox){
       } else if(aprox.data[i][j]) FP++;
     }
   }
-  return (double)TP/(double)(P + FP); //penalize false positives
+  return (double)(TP)/(double)(P); //penalize false positives
 }

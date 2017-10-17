@@ -88,12 +88,12 @@ ipoint* findInflectionPoints(PGM img, byte nPoints){
     x2 = findPointInRow(&img, i);
     if(x2 != 0 && x1 != 0){
       if(x1 > x2){
-        if(lastSlope == -1){//inflection point
+        if(lastSlope == -1 && found < nPoints -1){//inflection point
           points[found++] = newPoint(x1, i);
         }
         lastSlope = 1;
       } else if(x1 < x2){
-        if(lastSlope == 1){//inflection point
+        if(lastSlope == 1 && found < nPoints -1){//inflection point
           points[found++] = newPoint(x1, i);
         }
         lastSlope = -1;
@@ -114,7 +114,10 @@ ipoint* findInflectionPoints(PGM img, byte nPoints){
 }
 //UMDA like algorithm
 int cmpGradeFunc(const void *a, const void *b){
-  return (*(pointsGrade*)a).grade < (*(pointsGrade*)b).grade;
+  pointsGrade *pa = (pointsGrade*)a;
+  pointsGrade *pb = (pointsGrade*)b;
+  int res = pa->grade < pb->grade ? 1 : -1;
+  return res;
 }
 double gradePoints(PGM *img, ipoint *points, byte thVar, byte thickness, int n){
   double grade = 0;
@@ -129,7 +132,7 @@ double gradePoints(PGM *img, ipoint *points, byte thVar, byte thickness, int n){
   for (int i = 0; i < nTests; ++i) {
     byte thD = (byte)(15 + rand()%(10 * 2) - 10);
     for (int j = 0; j < nlines; ++j) {
-      lines[j].thickness = 15;
+      lines[j].thickness = (byte)(j == 0 ? 50 : 20);
       drawLine(img2, lines[j]);
     }
     double g = compareImg(*img, img2);
@@ -157,7 +160,7 @@ void genPointPopulation(ipoint *p, pointFreedom *var, int n, int size, ipoint** 
     }
   }
 }
-void testAndSortPointPop(PGM *img, ipoint** pop, byte* thicknesses, pointFreedom *var, int n, int size){
+double testAndSortPointPop(PGM *img, ipoint** pop, byte* thicknesses, pointFreedom *var, int n, int size){
   pointsGrade *grades = (pointsGrade*)malloc(sizeof(pointsGrade) * size);
   for (int i = 0; i < size; ++i) {
     grades[i].points = pop[i];
@@ -171,9 +174,12 @@ void testAndSortPointPop(PGM *img, ipoint** pop, byte* thicknesses, pointFreedom
 //  }
   for (int i = 0; i < size; ++i) {
     pop[i] = grades[i].points;
+//    printf("Sorted Grades := %lf\n", grades[i].grade);
   }
-  printf("Grade := %lf", grades[0].grade);
+//  printf("Grade := %lf", grades[0].grade);
+  double best = grades[0].grade;
   free(grades);
+  return best;
 }
 void updatePointAndVariance(ipoint *p, pointFreedom *var, ipoint **pop, int n, int size){
   byte maxVar = 10;
@@ -210,24 +216,31 @@ line* findBestLines(PGM *img, ipoint* points, byte n){
   for (int i = 0; i < n; ++i) {
     variance[i] = newPointFreedom(maxFree, maxFree, maxFree);
   }
-  byte genSize = 10; // max of 256?
+  byte genSize = 100; // max of 256?
   ipoint** pop = (ipoint**)malloc(sizeof(ipoint*) * genSize);
   for (int i = 0; i < genSize; ++i) pop[i] = (ipoint*)malloc(sizeof(ipoint) * n);
   //loop in a while variance > epsilon
-  int maxIter = 60;
+  int maxIter = 100;
   ipoint *bestPop = (ipoint*)malloc(sizeof(ipoint) * n);
   byte hasBest = 0;
+  double best = 1;
+  int iterSinceBest = 0;
   while(maxIter--) {
-    printf("Iter %d : ", 60 - maxIter);
+//    printf("Iter %d : ", 60 - maxIter);
     genPointPopulation(points, variance, n, genSize, pop);
     if (hasBest)
       memcpy(pop[0], bestPop, sizeof(ipoint) * n);
-    testAndSortPointPop(img, pop, thicknesses, variance, n, genSize);
+    double nB = testAndSortPointPop(img, pop, thicknesses, variance, n, genSize);
+    if (fabs(best - nB) < 0.00001){
+      iterSinceBest++;
+      if (iterSinceBest > 10) break;
+    } else{ iterSinceBest = 0;}
+    best = nB;
     hasBest = 1;
     memcpy(bestPop, pop[0], sizeof(ipoint) * n);
     updatePointAndVariance(points, variance, pop, n, (genSize + 1)/2);
     memcpy(points, pop[0], sizeof(ipoint) * n);
-    printf("\n");
+//    printf("\n");
   }
   free(bestPop);
   for (int i = 0; i < nlines; ++i) {
